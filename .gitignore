@@ -1,0 +1,22 @@
+# Ignore Binaries, Intermediates, and build directories
+Binaries/
+Intermediates/
+build/
+x64/
+
+# Ignore Visual Studio and Visual Studio Code directories
+.vs/
+.vscode/
+
+# Ignore compiled binary files
+*.dll
+*.exe
+
+# Ignore Visual Studio solution and project files
+*.sln
+*.vcxproj.*
+*.vcxproj.filters
+*.vcxproj.user
+
+# Ignore log files
+*.log
