@@ -1,6 +1,6 @@
 #include <iostream>
 
-int main(int argc, char** argv[])
-{
-	std::cout << "Welcome to Vault" << '\n';
+int main() {
+	std::cout << "Hello, World!" << std::endl;
+	return 0;
 }

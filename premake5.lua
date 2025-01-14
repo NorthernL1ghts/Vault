@@ -37,6 +37,23 @@ project "Vault"
       "VAULT_PLATFORM_WINDOWS"
    }
 
+   includedirs
+   {
+      -- Add bcrypt library include directory if needed
+      -- Example: "vendor/bcrypt/include"
+   }
+
+   libdirs
+   {
+      -- Add bcrypt library directory if needed
+      -- Example: "vendor/bcrypt/lib"
+   }
+
+   links
+   {
+      "bcrypt"
+   }
+
    filter "configurations:Debug"
       defines "VAULT_DEBUG"
       runtime "Debug"
