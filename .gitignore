@@ -69,3 +69,5 @@ deps/
 
 # External directories
 Docs/
+Tests/
+Temp/
