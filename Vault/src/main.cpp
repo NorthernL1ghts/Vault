@@ -13,6 +13,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <stdexcept>  // For std::out_of_range
 
 #pragma comment(lib, "bcrypt.lib")
 
@@ -47,8 +48,10 @@ struct ApplicationCommandLineArgs {
 	char** Args = nullptr;
 
 	const char* operator[](int index) const {
-		// TODO : Add proper bounds checking or error handling here
-		VAULT_CORE_ASSERT(index < Count, "Index out of range");
+		// Bounds checking with exception handling
+		if (index >= Count || index < 0) {
+			throw std::out_of_range("Index out of range: " + std::to_string(index));
+		}
 		return Args[index];
 	}
 };
@@ -231,7 +234,7 @@ static void Run() {
 		std::cout << hex_format(byte);
 
 	GenerateUniqueAuthTag();
-	std::cout << "\nAuthenication Tag: ";
+	std::cout << "\nAuthentication Tag: ";
 	for (const auto& byte : AUTH_TAG)
 		std::cout << hex_format(byte);
 
