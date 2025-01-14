@@ -23,13 +23,13 @@ Vault is an advanced encryption standard algorithm based on AES-256, upgraded to
 
 To build and set up Vault, you need the following:
 
-- **Premake 5**: Download from the official site [here](https://premake.github.io/download.html).
+- **Premake 5**: Download from the official site [here](https://premake.github.io/download).
 - **Updated C++ Compiler**: Visual Studio 2022 is preferred, but Visual Studio 2019 will work as well.
 
 ## Build and Setup
 
 1. **Download and Install Premake 5**
-    - Follow the instructions on the [official site](https://premake.github.io/download.html).
+    - Follow the instructions on the [official site](https://premake.github.io/download).
 
 2. **Setup the Solution**
     - Navigate to the `Scripts/` folder.
@@ -57,9 +57,9 @@ This project is licensed under the terms of the MIT license. See the LICENSE fil
 
 ## Useful Links
 
-- **Visual Studio 2022**: [Download](https://visualstudio.microsoft.com/vs/whats-new/)
+- **Visual Studio 2022**: [Download](https://visualstudio.microsoft.com/downloads/)
 - **Visual Studio 2019**: [Download](https://visualstudio.microsoft.com/vs/older-downloads/)
 - **GCC (GNU Compiler Collection)**: [Download](https://gcc.gnu.org/)
-- **Clang**: [Download](https://clang.llvm.org/)
+- **Clang**: [Download](https://releases.llvm.org/download.html)
 - **Visual Studio Code**: [Download](https://code.visualstudio.com/download)
 
