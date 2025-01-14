@@ -1,43 +1,61 @@
 #include <iostream>
-#include <windows.h>
+#include <Windows.h>
 #include <bcrypt.h>
+#include <array>
+#include <format>
 
 #pragma comment(lib, "bcrypt.lib")
 
-void GenerateAES256Keys(unsigned char* key1, unsigned char* key2) {
+BCRYPT_ALG_HANDLE h_Algorithm = nullptr;
+
+bool Initialize() {
+	// Open an algorithm handle for AES
+	NTSTATUS status = BCryptOpenAlgorithmProvider(&h_Algorithm, BCRYPT_AES_ALGORITHM, nullptr, 0);
+	if (status != 0) {
+		std::cerr << "Failed to open algorithm provider, error code: " << status << std::endl;
+		return false;
+	}
+	return true;
+}
+
+void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<unsigned char, 32>& aes256Key2) {
 	NTSTATUS status;
 
-	// Define key size (256 bits = 32 bytes)
-	const size_t keySize = 32;
-
 	// Generate first key
-	status = BCryptGenRandom(nullptr, key1, keySize, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-	if (status != 0) {
-		std::cerr << "Failed to generate key1, error code: " << status << std::endl;
-	}
+	status = BCryptGenRandom(nullptr, aes256Key1.data(), static_cast<ULONG>(aes256Key1.size()), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+	if (status != 0)
+		std::cerr << "Failed to generate first AES-256 key, error code: " << status << std::endl;
 
 	// Generate second key
-	status = BCryptGenRandom(nullptr, key2, keySize, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-	if (status != 0) {
-		std::cerr << "Failed to generate key2, error code: " << status << std::endl;
-	}
+	status = BCryptGenRandom(nullptr, aes256Key2.data(), static_cast<ULONG>(aes256Key2.size()), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+	if (status != 0)
+		std::cerr << "Failed to generate second AES-256 key, error code: " << status << std::endl;
 }
 
 int main() {
-	unsigned char key1[32];
-	unsigned char key2[32];
-
-	GenerateAES256Keys(key1, key2);
-
-	std::cout << "Key1: ";
-	for (int i = 0; i < 32; i++) {
-		std::cout << std::hex << (int)key1[i];
+	if (!Initialize()) {
+		std::cerr << "Failed to initialize BCrypt." << std::endl;
+		return -1;
 	}
-	std::cout << "\nKey2: ";
-	for (int i = 0; i < 32; i++) {
-		std::cout << std::hex << (int)key2[i];
-	}
+
+	std::array<unsigned char, 32> aes256Key1;
+	std::array<unsigned char, 32> aes256Key2;
+
+	GenerateAES256Keys(aes256Key1, aes256Key2);
+
+	std::cout << "AES-256 Key 1: ";
+	for (const auto& byte : aes256Key1)
+		std::cout << std::format("{:02x}", byte);
+
+	std::cout << "\nAES-256 Key 2: ";
+	for (const auto& byte : aes256Key2)
+		std::cout << std::format("{:02x}", byte);
+
 	std::cout << std::endl;
+
+	// Clean up
+	if (h_Algorithm)
+		BCryptCloseAlgorithmProvider(h_Algorithm, 0);
 
 	return 0;
 }
