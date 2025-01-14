@@ -27,10 +27,9 @@ constexpr const char* ROOT_DIR = "C:\\Dev\\Vault";
 constexpr auto VAULT_ASSERT = [](bool x, const char* msg) { if (!x) { std::cerr << "Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } };
 constexpr auto VAULT_CORE_ASSERT = [](bool x, const char* msg) { if (!x) { std::cerr << "Core Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } };
 
-// Define the constants for IV, NONCE, and AUTH_TAG for AES-512
-constexpr ByteArray16 IV = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F };
-constexpr ByteArray12 NONCE = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B };
-constexpr ByteArray16 AUTH_TAG = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F };
+ByteArray16 IV;
+ByteArray12 NONCE;
+ByteArray16 AUTH_TAG;
 
 struct ApplicationCommandLineArgs
 {
@@ -64,6 +63,10 @@ std::mutex m_MainThreadQueueMutex;
 static bool Initialize();
 static void GenerateAES256Keys(ByteArray32& aes256Key1, ByteArray32& aes256Key2);
 static void ConcatenateKeys(const ByteArray32& aes256Key1, const ByteArray32& aes256Key2, ByteArray64& aes512Key);
+static void GenerateRandomBytes(unsigned char* buffer, std::size_t size);
+static void GenerateUniqueIV();
+static void GenerateUniqueNonce();
+static void GenerateUniqueAuthTag();
 static void SubmitToMainThread(const std::function<void()>& function);
 static void ExecuteMainThreadQueue();
 static void Shutdown();
@@ -107,6 +110,27 @@ static void ConcatenateKeys(const ByteArray32& aes256Key1, const ByteArray32& ae
 {
 	std::copy(aes256Key1.begin(), aes256Key1.end(), aes512Key.begin());
 	std::copy(aes256Key2.begin(), aes256Key2.end(), aes512Key.begin() + 32);
+}
+
+static void GenerateRandomBytes(unsigned char* buffer, std::size_t size)
+{
+	NTSTATUS status = BCryptGenRandom(nullptr, buffer, static_cast<ULONG>(size), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+	VAULT_CORE_ASSERT(status == 0, "Failed to generate random bytes");
+}
+
+static void GenerateUniqueIV()
+{
+	GenerateRandomBytes(IV.data(), IV.size());
+}
+
+static void GenerateUniqueNonce()
+{
+	GenerateRandomBytes(NONCE.data(), NONCE.size());
+}
+
+static void GenerateUniqueAuthTag()
+{
+	GenerateRandomBytes(AUTH_TAG.data(), AUTH_TAG.size());
 }
 
 static void SubmitToMainThread(const std::function<void()>& function)
@@ -188,14 +212,17 @@ static void Run()
 	for (const auto& byte : aes512Key)
 		std::cout << std::format("{:02x}", byte);
 
+	GenerateUniqueIV();
 	std::cout << "\nIV: ";
 	for (const auto& byte : IV)
 		std::cout << std::format("{:02x}", byte);
 
+	GenerateUniqueNonce();
 	std::cout << "\nNonce: ";
 	for (const auto& byte : NONCE)
 		std::cout << std::format("{:02x}", byte);
 
+	GenerateUniqueAuthTag();
 	std::cout << "\nAuth Tag: ";
 	for (const auto& byte : AUTH_TAG)
 		std::cout << std::format("{:02x}", byte);
