@@ -273,6 +273,7 @@ int main(int argc, char** argv)
 	ApplicationSpecification appSpec{ "Vault", "", cmdArgs };
 	m_Specification = &appSpec;
 
+	// Set the working directory if not empty.
 	if (!appSpec.WorkingDirectory.empty())
 		std::filesystem::current_path(appSpec.WorkingDirectory);
 
