@@ -13,7 +13,7 @@ bool Initialize() {
 	// Open an algorithm handle for AES
 	NTSTATUS status = BCryptOpenAlgorithmProvider(&h_Algorithm, BCRYPT_AES_ALGORITHM, nullptr, 0);
 	if (status != 0) {
-		std::cerr << "Failed to open algorithm provider, error code: " << status << std::endl;
+		std::cerr << "Failed to open algorithm provider, error code: " << status << '\n';
 		return false;
 	}
 	return true;
@@ -25,12 +25,12 @@ void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<un
 	// Generate first key
 	status = BCryptGenRandom(nullptr, aes256Key1.data(), static_cast<ULONG>(aes256Key1.size()), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
 	if (status != 0)
-		std::cerr << "Failed to generate first AES-256 key, error code: " << status << std::endl;
+		std::cerr << "Failed to generate first AES-256 key, error code: " << status << '\n';
 
 	// Generate second key
 	status = BCryptGenRandom(nullptr, aes256Key2.data(), static_cast<ULONG>(aes256Key2.size()), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
 	if (status != 0)
-		std::cerr << "Failed to generate second AES-256 key, error code: " << status << std::endl;
+		std::cerr << "Failed to generate second AES-256 key, error code: " << status << '\n';
 }
 
 void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std::array<unsigned char, 32>& aes256Key2, std::array<unsigned char, 64>& aes512Key) {
@@ -42,7 +42,7 @@ void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std:
 
 void Run() {
 	if (!Initialize()) {
-		std::cerr << "Failed to initialize BCrypt." << std::endl;
+		std::cerr << "Failed to initialize BCrypt." << '\n';
 		return;
 	}
 
@@ -67,17 +67,14 @@ void Run() {
 	for (const auto& byte : aes512Key)
 		std::cout << std::format("{:02x}", byte);
 
-	std::cout << std::endl;
+	std::cout << '\n';
 
 	while (g_ApplicationRunning) {
-		// Application running logic
-		// For demonstration, we will stop the application after one iteration
-		g_ApplicationRunning = false;
+		g_ApplicationRunning = true;
 	}
 }
 
 void Shutdown() {
-	// Perform shutdown tasks
 	g_ApplicationRunning = false;
 	std::cout << "Shutting down application...\n";
 
@@ -85,7 +82,6 @@ void Shutdown() {
 	if (h_Algorithm)
 		BCryptCloseAlgorithmProvider(h_Algorithm, 0);
 
-	// Exit the application
 	exit(0);
 }
 
