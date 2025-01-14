@@ -66,3 +66,6 @@ node_modules/
 
 # Ignore dependencies
 deps/
+
+# External directories
+Docs/
