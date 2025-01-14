@@ -4,11 +4,19 @@
 #include <array>
 #include <format>
 #include <atomic>
+#include <thread>
+#include <vector>
+#include <functional>
+#include <mutex>
 
 #pragma comment(lib, "bcrypt.lib")
 
 BCRYPT_ALG_HANDLE h_Algorithm = nullptr;
 std::atomic<bool> g_ApplicationRunning(true);
+static std::thread s_MainThread;
+static std::thread::id s_MainThreadID;
+std::vector<std::function<void()>> m_MainThreadQueue;
+std::mutex m_MainThreadQueueMutex;
 
 bool Initialize()
 {
@@ -40,6 +48,24 @@ void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std:
 	std::copy(aes256Key2.begin(), aes256Key2.end(), aes512Key.begin() + 32);
 }
 
+void SubmitToMainThread(const std::function<void()>& function)
+{
+	std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+	m_MainThreadQueue.emplace_back(function);
+}
+
+void ExecuteMainThreadQueue()
+{
+	std::vector<std::function<void()>> queueCopy;
+	{
+		std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+		queueCopy.swap(m_MainThreadQueue);
+	}
+
+	for (auto& func : queueCopy)
+		func();
+}
+
 void Shutdown()
 {
 	g_ApplicationRunning = false;
@@ -47,14 +73,19 @@ void Shutdown()
 
 	if (h_Algorithm)
 		BCryptCloseAlgorithmProvider(h_Algorithm, 0);
-}
 
+	if (s_MainThread.joinable())
+		s_MainThread.join();
+}
 
 void Run()
 {
+	s_MainThreadID = std::this_thread::get_id();
+	std::cout << "Main thread ID: " << s_MainThreadID << '\n';
+
 	if (!Initialize())
 	{
-		std::cerr << "Failed to initialize BCrypt." << '\n';
+		std::cerr << "Failed to initialize BCrypt.\n";
 		return;
 	}
 
@@ -82,14 +113,15 @@ void Run()
 	std::cout << '\n';
 
 	while (g_ApplicationRunning)
-	{
-	}
+		ExecuteMainThreadQueue();
 
-	Shutdown();  // Call Shutdown here
+	Shutdown();
 }
 
 int main()
 {
-	Run();
+	s_MainThread = std::thread(Run);
+	if (s_MainThread.joinable())
+		s_MainThread.join();
 	return 0;
 }
