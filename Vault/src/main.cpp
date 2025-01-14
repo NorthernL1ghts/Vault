@@ -14,17 +14,22 @@ constexpr const char* ROOT_DIR = "C:\\Dev\\Vault";
 
 #pragma comment(lib, "bcrypt.lib")
 
+using ByteArray32 = std::array<unsigned char, 32>;
+using ByteArray64 = std::array<unsigned char, 64>;
+using FunctionQueue = std::vector<std::function<void()>>;
+using MutexLock = std::scoped_lock<std::mutex>;
+
 BCRYPT_ALG_HANDLE h_Algorithm = nullptr;
 std::atomic<bool> g_ApplicationRunning(true);
 static std::thread s_MainThread;
 static std::thread s_KeyThread;
 static std::thread::id s_MainThreadID;
-std::vector<std::function<void()>> m_MainThreadQueue;
+FunctionQueue m_MainThreadQueue;
 std::mutex m_MainThreadQueueMutex;
 
 static bool Initialize();
-static void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<unsigned char, 32>& aes256Key2);
-static void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std::array<unsigned char, 32>& aes256Key2, std::array<unsigned char, 64>& aes512Key);
+static void GenerateAES256Keys(ByteArray32& aes256Key1, ByteArray32& aes256Key2);
+static void ConcatenateKeys(const ByteArray32& aes256Key1, const ByteArray32& aes256Key2, ByteArray64& aes512Key);
 static void SubmitToMainThread(const std::function<void()>& function);
 static void ExecuteMainThreadQueue();
 static void Shutdown();
@@ -51,7 +56,7 @@ static bool Initialize()
 	return true;
 }
 
-static void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<unsigned char, 32>& aes256Key2)
+static void GenerateAES256Keys(ByteArray32& aes256Key1, ByteArray32& aes256Key2)
 {
 	NTSTATUS status;
 
@@ -64,7 +69,7 @@ static void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::a
 		std::cerr << "Failed to generate second AES-256 key, error code: " << status << '\n';
 }
 
-static void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std::array<unsigned char, 32>& aes256Key2, std::array<unsigned char, 64>& aes512Key)
+static void ConcatenateKeys(const ByteArray32& aes256Key1, const ByteArray32& aes256Key2, ByteArray64& aes512Key)
 {
 	std::copy(aes256Key1.begin(), aes256Key1.end(), aes512Key.begin());
 	std::copy(aes256Key2.begin(), aes256Key2.end(), aes512Key.begin() + 32);
@@ -72,15 +77,15 @@ static void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, con
 
 static void SubmitToMainThread(const std::function<void()>& function)
 {
-	std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+	MutexLock lock(m_MainThreadQueueMutex);
 	m_MainThreadQueue.emplace_back(function);
 }
 
 static void ExecuteMainThreadQueue()
 {
-	std::vector<std::function<void()>> queueCopy;
+	FunctionQueue queueCopy;
 	{
-		std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+		MutexLock lock(m_MainThreadQueueMutex);
 		queueCopy.swap(m_MainThreadQueue);
 	}
 
@@ -130,9 +135,9 @@ static void Run()
 
 	std::cout << "Application is running...\n";
 
-	std::array<unsigned char, 32> aes256Key1;
-	std::array<unsigned char, 32> aes256Key2;
-	std::array<unsigned char, 64> aes512Key;
+	ByteArray32 aes256Key1;
+	ByteArray32 aes256Key2;
+	ByteArray64 aes512Key;
 
 	GenerateAES256Keys(aes256Key1, aes256Key2);
 	ConcatenateKeys(aes256Key1, aes256Key2, aes512Key);
