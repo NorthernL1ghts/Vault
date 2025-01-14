@@ -52,7 +52,6 @@ struct ApplicationSpecification
 	ApplicationCommandLineArgs CommandLineArgs;
 };
 
-// Declare a pointer to ApplicationSpecification
 ApplicationSpecification* m_Specification = nullptr;
 
 BCRYPT_ALG_HANDLE h_Algorithm = nullptr;
@@ -62,7 +61,7 @@ static std::thread::id s_MainThreadID;
 FunctionQueue m_MainThreadQueue;
 std::mutex m_MainThreadQueueMutex;
 
-static bool Initialize();
+static bool InitializeEncryptionLibrary();
 static void GenerateAES256Keys(ByteArray32& aes256Key1, ByteArray32& aes256Key2);
 static void ConcatenateKeys(const ByteArray32& aes256Key1, const ByteArray32& aes256Key2, ByteArray64& aes512Key);
 static void GenerateRandomBytes(unsigned char* buffer, std::size_t size);
@@ -78,9 +77,9 @@ static void KeyMonitor();
 static void Run();
 static void SignalHandler(int signal);
 
-// Method to get the application specification
 const ApplicationSpecification* GetSpecification() { return m_Specification; }
 
+// NOTE (NorthernL1ghts): Create and move to a Signal / SignalHandler class.
 static void SignalHandler(int signal)
 {
 	if (signal == SIGINT)
@@ -90,7 +89,7 @@ static void SignalHandler(int signal)
 	}
 }
 
-static bool Initialize()
+static bool InitializeEncryptionLibrary()
 {
 	NTSTATUS status = BCryptOpenAlgorithmProvider(&h_Algorithm, BCRYPT_AES_ALGORITHM, nullptr, 0);
 	VAULT_CORE_ASSERT(status == 0, "Failed to open algorithm provider");
@@ -209,7 +208,7 @@ static void Run()
 	s_MainThreadID = std::this_thread::get_id();
 	std::cout << "Main thread ID: " << s_MainThreadID << '\n';
 
-	if (!Initialize())
+	if (!InitializeEncryptionLibrary())
 	{
 		std::cerr << "Failed to initialize BCrypt.\n";
 		return;
@@ -254,7 +253,6 @@ static void Run()
 
 	std::cout << '\n';
 
-	// Example usage of GetFileContents
 	GetFileContents(std::string(ROOT_DIR) + "\\Tests\\example_file.txt");
 
 	s_KeyThread = std::thread(KeyMonitor);
@@ -283,7 +281,6 @@ int main(int argc, char** argv)
 	if (s_MainThread.joinable())
 		s_MainThread.join();
 
-	// Example usage of GetFileContents
 	GetFileContents(std::string(ROOT_DIR) + "\\Tests\\example_file.txt");
 
 	return 0;
