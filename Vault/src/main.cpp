@@ -2,7 +2,6 @@
 #include <Windows.h>
 #include <bcrypt.h>
 #include <array>
-#include <format>
 #include <atomic>
 #include <thread>
 #include <vector>
@@ -12,6 +11,8 @@
 #include <string>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
+#include <iomanip>
 
 #pragma comment(lib, "bcrypt.lib")
 
@@ -22,31 +23,46 @@ using ByteArray64 = std::array<unsigned char, 64>;
 using FunctionQueue = std::vector<std::function<void()>>;
 using MutexLock = std::scoped_lock<std::mutex>;
 
+// Template for hex formatting
+template <typename T>
+std::string hex_format(T value) {
+	std::ostringstream oss;
+	oss << std::hex << std::setfill('0') << std::setw(2 * sizeof(T)) << static_cast<uint64_t>(value);
+	return oss.str();
+}
+
 std::atomic<bool> g_ApplicationRunning(false);
 constexpr const char* ROOT_DIR = "C:\\Dev\\Vault";
 
-// TODO (NorthernL1ghts): Make a Assert header file for these as they don't need to be stored here.
-constexpr auto VAULT_ASSERT = [](bool x, const char* msg) { if (!x) { std::cerr << "Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } };
-constexpr auto VAULT_CORE_ASSERT = [](bool x, const char* msg) { if (!x) { std::cerr << "Core Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } };
+constexpr auto VAULT_ASSERT = [](bool x, const char* msg) {
+	if (!x) {
+		std::cerr << "Assertion Failed: " << msg << '\n';
+		g_ApplicationRunning = false;
+	}
+	};
+
+constexpr auto VAULT_CORE_ASSERT = [](bool x, const char* msg) {
+	if (!x) {
+		std::cerr << "Core Assertion Failed: " << msg << '\n';
+		g_ApplicationRunning = false;
+	}
+	};
 
 ByteArray16 IV;
 ByteArray12 NONCE;
 ByteArray16 AUTH_TAG;
 
-struct ApplicationCommandLineArgs
-{
+struct ApplicationCommandLineArgs {
 	int Count = 0;
 	char** Args = nullptr;
 
-	const char* operator[](int index) const
-	{
+	const char* operator[](int index) const {
 		VAULT_CORE_ASSERT(index < Count, "Index out of range");
 		return Args[index];
 	}
 };
 
-struct ApplicationSpecification
-{
+struct ApplicationSpecification {
 	std::string Name = "Vault";
 	std::string WorkingDirectory;
 	ApplicationCommandLineArgs CommandLineArgs;
@@ -79,25 +95,20 @@ static void SignalHandler(int signal);
 
 const ApplicationSpecification* GetSpecification() { return m_Specification; }
 
-// NOTE (NorthernL1ghts): Create and move to a Signal / SignalHandler class.
-static void SignalHandler(int signal)
-{
-	if (signal == SIGINT)
-	{
+static void SignalHandler(int signal) {
+	if (signal == SIGINT) {
 		std::cout << "SIGINT received. Initiating shutdown...\n";
 		SubmitToMainThread(Shutdown);
 	}
 }
 
-static bool InitializeEncryptionLibrary()
-{
+static bool InitializeEncryptionLibrary() {
 	NTSTATUS status = BCryptOpenAlgorithmProvider(&h_Algorithm, BCRYPT_AES_ALGORITHM, nullptr, 0);
 	VAULT_CORE_ASSERT(status == 0, "Failed to open algorithm provider");
 	return status == 0;
 }
 
-static void GenerateAES256Keys(ByteArray32& aes256Key1, ByteArray32& aes256Key2)
-{
+static void GenerateAES256Keys(ByteArray32& aes256Key1, ByteArray32& aes256Key2) {
 	NTSTATUS status;
 
 	status = BCryptGenRandom(nullptr, aes256Key1.data(), static_cast<ULONG>(aes256Key1.size()), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
@@ -109,61 +120,47 @@ static void GenerateAES256Keys(ByteArray32& aes256Key1, ByteArray32& aes256Key2)
 		std::cerr << "Failed to generate second AES-256 key, error code: " << status << '\n';
 }
 
-static void ConcatenateKeys(const ByteArray32& aes256Key1, const ByteArray32& aes256Key2, ByteArray64& aes512Key)
-{
+static void ConcatenateKeys(const ByteArray32& aes256Key1, const ByteArray32& aes256Key2, ByteArray64& aes512Key) {
 	std::copy(aes256Key1.begin(), aes256Key1.end(), aes512Key.begin());
 	std::copy(aes256Key2.begin(), aes256Key2.end(), aes512Key.begin() + 32);
 }
 
-static void GenerateRandomBytes(unsigned char* buffer, std::size_t size)
-{
+static void GenerateRandomBytes(unsigned char* buffer, std::size_t size) {
 	NTSTATUS status = BCryptGenRandom(nullptr, buffer, static_cast<ULONG>(size), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
 	VAULT_CORE_ASSERT(status == 0, "Failed to generate random bytes");
 }
 
-// TODO (NorthernL1ghts): Move to a HelperFunctions or Utility class.
-static void GenerateUniqueIV()
-{
+static void GenerateUniqueIV() {
 	GenerateRandomBytes(IV.data(), IV.size());
 }
 
-// TODO (NorthernL1ghts): Move to a HelperFunctions or Utility class.
-static void GenerateUniqueNonce()
-{
+static void GenerateUniqueNonce() {
 	GenerateRandomBytes(NONCE.data(), NONCE.size());
 }
 
-// TODO (NorthernL1ghts): Move to a HelperFunctions or Utility class.
-static void GenerateUniqueAuthTag()
-{
+static void GenerateUniqueAuthTag() {
 	GenerateRandomBytes(AUTH_TAG.data(), AUTH_TAG.size());
 }
 
-// TODO (NorthernL1ghts): Move this to a IO of FileSystem class.
-static std::ifstream GetFile(const std::string& filePath)
-{
+static std::ifstream GetFile(const std::string& filePath) {
 	std::ifstream file(filePath, std::ios::binary);
 	VAULT_ASSERT(file.is_open(), "Failed to open file");
 	return file;
 }
 
-// TODO (NorthernL1ghts): Move this to a IO of FileSystem class.
-static void GetFileContents(const std::string& filePath)
-{
+static void GetFileContents(const std::string& filePath) {
 	std::ifstream file = GetFile(filePath);
 	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 	std::cout << "\nFile Contents:" << content << '\n';
 	file.close();
 }
 
-static void SubmitToMainThread(const std::function<void()>& function)
-{
+static void SubmitToMainThread(const std::function<void()>& function) {
 	MutexLock lock(m_MainThreadQueueMutex);
 	m_MainThreadQueue.emplace_back(function);
 }
 
-static void ExecuteMainThreadQueue()
-{
+static void ExecuteMainThreadQueue() {
 	FunctionQueue queueCopy;
 	{
 		MutexLock lock(m_MainThreadQueueMutex);
@@ -174,8 +171,7 @@ static void ExecuteMainThreadQueue()
 		func();
 }
 
-static void Shutdown()
-{
+static void Shutdown() {
 	g_ApplicationRunning = false;
 	std::cout << "Shutting down application...\n";
 
@@ -189,12 +185,9 @@ static void Shutdown()
 		s_KeyThread.join();
 }
 
-static void KeyMonitor()
-{
-	while (g_ApplicationRunning)
-	{
-		if ((GetAsyncKeyState('Q') & 0x8000) || (GetAsyncKeyState('q') & 0x8000))
-		{
+static void KeyMonitor() {
+	while (g_ApplicationRunning) {
+		if ((GetAsyncKeyState('Q') & 0x8000) || (GetAsyncKeyState('q') & 0x8000)) {
 			std::cout << "Termination key (q/Q) pressed. Initiating shutdown...\n";
 			SubmitToMainThread(Shutdown);
 			return;
@@ -203,13 +196,11 @@ static void KeyMonitor()
 	}
 }
 
-static void Run()
-{
+static void Run() {
 	s_MainThreadID = std::this_thread::get_id();
 	std::cout << "Main thread ID: " << s_MainThreadID << '\n';
 
-	if (!InitializeEncryptionLibrary())
-	{
+	if (!InitializeEncryptionLibrary()) {
 		std::cerr << "Failed to initialize BCrypt.\n";
 		return;
 	}
@@ -223,33 +214,32 @@ static void Run()
 	GenerateAES256Keys(aes256Key1, aes256Key2);
 	ConcatenateKeys(aes256Key1, aes256Key2, aes512Key);
 
-	// TODO (NorthernL1ghts): Potenially move these printing or output to a new method called PrintInformation to clean Run().
 	std::cout << "Generated AES-256 Key 1: ";
 	for (const auto& byte : aes256Key1)
-		std::cout << std::format("{:02x}", byte);
+		std::cout << hex_format(byte);
 
 	std::cout << "\nGenerated AES-256 Key 2: ";
 	for (const auto& byte : aes256Key2)
-		std::cout << std::format("{:02x}", byte);
+		std::cout << hex_format(byte);
 
 	std::cout << "\nGenerated AES-512 Key: ";
 	for (const auto& byte : aes512Key)
-		std::cout << std::format("{:02x}", byte);
+		std::cout << hex_format(byte);
 
 	GenerateUniqueIV();
 	std::cout << "\nIV: ";
 	for (const auto& byte : IV)
-		std::cout << std::format("{:02x}", byte);
+		std::cout << hex_format(byte);
 
 	GenerateUniqueNonce();
 	std::cout << "\nNonce: ";
 	for (const auto& byte : NONCE)
-		std::cout << std::format("{:02x}", byte);
+		std::cout << hex_format(byte);
 
 	GenerateUniqueAuthTag();
 	std::cout << "\nAuth Tag: ";
 	for (const auto& byte : AUTH_TAG)
-		std::cout << std::format("{:02x}", byte);
+		std::cout << hex_format(byte);
 
 	std::cout << '\n';
 
@@ -263,8 +253,7 @@ static void Run()
 	Shutdown();
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
 	VAULT_ASSERT(g_ApplicationRunning == false, "Program is already running");
 
 	g_ApplicationRunning = true;
@@ -273,16 +262,9 @@ int main(int argc, char** argv)
 	ApplicationSpecification appSpec{ "Vault", "", cmdArgs };
 	m_Specification = &appSpec;
 
-	// Set the working directory if not empty.
-	if (!appSpec.WorkingDirectory.empty())
-		std::filesystem::current_path(appSpec.WorkingDirectory);
-
 	signal(SIGINT, SignalHandler);
 	s_MainThread = std::thread(Run);
-	if (s_MainThread.joinable())
-		s_MainThread.join();
-
-	GetFileContents(std::string(ROOT_DIR) + "\\Tests\\example_file.txt");
+	s_MainThread.join();
 
 	return 0;
 }
