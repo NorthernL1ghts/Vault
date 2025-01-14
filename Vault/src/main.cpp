@@ -33,6 +33,13 @@ void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<un
 		std::cerr << "Failed to generate second AES-256 key, error code: " << status << std::endl;
 }
 
+void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std::array<unsigned char, 32>& aes256Key2, std::array<unsigned char, 64>& aes512Key) {
+	// Copy the first 32 bytes
+	std::copy(aes256Key1.begin(), aes256Key1.end(), aes512Key.begin());
+	// Copy the second 32 bytes
+	std::copy(aes256Key2.begin(), aes256Key2.end(), aes512Key.begin() + 32);
+}
+
 void Run() {
 	if (!Initialize()) {
 		std::cerr << "Failed to initialize BCrypt." << std::endl;
@@ -43,8 +50,10 @@ void Run() {
 
 	std::array<unsigned char, 32> aes256Key1;
 	std::array<unsigned char, 32> aes256Key2;
+	std::array<unsigned char, 64> aes512Key;
 
 	GenerateAES256Keys(aes256Key1, aes256Key2);
+	ConcatenateKeys(aes256Key1, aes256Key2, aes512Key);
 
 	std::cout << "AES-256 Key 1: ";
 	for (const auto& byte : aes256Key1)
@@ -52,6 +61,10 @@ void Run() {
 
 	std::cout << "\nAES-256 Key 2: ";
 	for (const auto& byte : aes256Key2)
+		std::cout << std::format("{:02x}", byte);
+
+	std::cout << "\nAES-512 Key: ";
+	for (const auto& byte : aes512Key)
 		std::cout << std::format("{:02x}", byte);
 
 	std::cout << std::endl;
