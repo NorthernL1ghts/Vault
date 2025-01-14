@@ -20,6 +20,7 @@ x64/
 
 # Ignore Vault project files
 *.vxproj
+Vault.vcxproj
 
 # Ignore additional directories
 obj/
@@ -27,3 +28,41 @@ bin/
 
 # Ignore log files
 *.log
+
+# Ignore other common directories
+*.pdb
+*.ipch
+*.idb
+*.obj
+*.ipdb
+
+# Ignore backup and temporary files
+*~
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# Ignore build artifacts
+*.app
+*.dSYM
+*.lib
+*.o
+*.out
+*.pch
+
+# Ignore other IDE specific files
+.idea/
+*.iml
+*.iws
+*.classpath
+*.project
+*.cproject
+*.launch
+
+# Ignore node_modules
+node_modules/
+
+# Ignore dependencies
+deps/
