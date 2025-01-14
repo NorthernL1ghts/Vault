@@ -25,6 +25,7 @@ using MutexLock = std::scoped_lock<std::mutex>;
 std::atomic<bool> g_ApplicationRunning(false);
 constexpr const char* ROOT_DIR = "C:\\Dev\\Vault";
 
+// TODO (NorthernL1ghts): Make a Assert header file for these as they don't need to be stored here.
 constexpr auto VAULT_ASSERT = [](bool x, const char* msg) { if (!x) { std::cerr << "Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } };
 constexpr auto VAULT_CORE_ASSERT = [](bool x, const char* msg) { if (!x) { std::cerr << "Core Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } };
 
@@ -121,21 +122,25 @@ static void GenerateRandomBytes(unsigned char* buffer, std::size_t size)
 	VAULT_CORE_ASSERT(status == 0, "Failed to generate random bytes");
 }
 
+// TODO (NorthernL1ghts): Move to a HelperFunctions or Utility class.
 static void GenerateUniqueIV()
 {
 	GenerateRandomBytes(IV.data(), IV.size());
 }
 
+// TODO (NorthernL1ghts): Move to a HelperFunctions or Utility class.
 static void GenerateUniqueNonce()
 {
 	GenerateRandomBytes(NONCE.data(), NONCE.size());
 }
 
+// TODO (NorthernL1ghts): Move to a HelperFunctions or Utility class.
 static void GenerateUniqueAuthTag()
 {
 	GenerateRandomBytes(AUTH_TAG.data(), AUTH_TAG.size());
 }
 
+// TODO (NorthernL1ghts): Move this to a IO of FileSystem class.
 static std::ifstream GetFile(const std::string& filePath)
 {
 	std::ifstream file(filePath, std::ios::binary);
@@ -143,6 +148,7 @@ static std::ifstream GetFile(const std::string& filePath)
 	return file;
 }
 
+// TODO (NorthernL1ghts): Move this to a IO of FileSystem class.
 static void GetFileContents(const std::string& filePath)
 {
 	std::ifstream file = GetFile(filePath);
@@ -218,6 +224,7 @@ static void Run()
 	GenerateAES256Keys(aes256Key1, aes256Key2);
 	ConcatenateKeys(aes256Key1, aes256Key2, aes512Key);
 
+	// TODO (NorthernL1ghts): Potenially move these printing or output to a new method called PrintInformation to clean Run().
 	std::cout << "Generated AES-256 Key 1: ";
 	for (const auto& byte : aes256Key1)
 		std::cout << std::format("{:02x}", byte);
