@@ -26,6 +26,7 @@ using MutexLock = std::scoped_lock<std::mutex>;
 // Template for hex formatting
 template <typename T>
 std::string hex_format(T value) {
+	// NOTE (NorthernL1ghts) : Hex format conversion for various types
 	std::ostringstream oss;
 	oss << std::hex << std::setfill('0') << std::setw(2 * sizeof(T)) << static_cast<uint64_t>(value);
 	return oss.str();
@@ -34,19 +35,8 @@ std::string hex_format(T value) {
 std::atomic<bool> g_ApplicationRunning(false);
 constexpr const char* ROOT_DIR = "C:\\Dev\\Vault";
 
-constexpr auto VAULT_ASSERT = [](bool x, const char* msg) {
-	if (!x) {
-		std::cerr << "Assertion Failed: " << msg << '\n';
-		g_ApplicationRunning = false;
-	}
-	};
-
-constexpr auto VAULT_CORE_ASSERT = [](bool x, const char* msg) {
-	if (!x) {
-		std::cerr << "Core Assertion Failed: " << msg << '\n';
-		g_ApplicationRunning = false;
-	}
-	};
+constexpr auto VAULT_ASSERT = [](bool x, const char* msg) { if (!x) { std::cerr << "Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; }};
+constexpr auto VAULT_CORE_ASSERT = [](bool x, const char* msg) { if (!x) { std::cerr << "Core Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; }};
 
 ByteArray16 IV;
 ByteArray12 NONCE;
@@ -57,6 +47,7 @@ struct ApplicationCommandLineArgs {
 	char** Args = nullptr;
 
 	const char* operator[](int index) const {
+		// TODO : Add proper bounds checking or error handling here
 		VAULT_CORE_ASSERT(index < Count, "Index out of range");
 		return Args[index];
 	}
@@ -81,9 +72,9 @@ static bool InitializeEncryptionLibrary();
 static void GenerateAES256Keys(ByteArray32& aes256Key1, ByteArray32& aes256Key2);
 static void ConcatenateKeys(const ByteArray32& aes256Key1, const ByteArray32& aes256Key2, ByteArray64& aes512Key);
 static void GenerateRandomBytes(unsigned char* buffer, std::size_t size);
-static void GenerateUniqueIV();
-static void GenerateUniqueNonce();
-static void GenerateUniqueAuthTag();
+static void GenerateUniqueIV(); // TODO : Move to helper functions or utility
+static void GenerateUniqueNonce(); // TODO : Move to helper functions or utility
+static void GenerateUniqueAuthTag(); // TODO : Move to helper functions or utility
 static std::ifstream GetFile(const std::string& filePath);
 static void GetFileContents(const std::string& filePath);
 static void SubmitToMainThread(const std::function<void()>& function);
@@ -130,14 +121,17 @@ static void GenerateRandomBytes(unsigned char* buffer, std::size_t size) {
 	VAULT_CORE_ASSERT(status == 0, "Failed to generate random bytes");
 }
 
+// TODO : Move to helper functions or utility
 static void GenerateUniqueIV() {
 	GenerateRandomBytes(IV.data(), IV.size());
 }
 
+// TODO : Move to helper functions or utility
 static void GenerateUniqueNonce() {
 	GenerateRandomBytes(NONCE.data(), NONCE.size());
 }
 
+// TODO : Move to helper functions or utility
 static void GenerateUniqueAuthTag() {
 	GenerateRandomBytes(AUTH_TAG.data(), AUTH_TAG.size());
 }
@@ -237,7 +231,7 @@ static void Run() {
 		std::cout << hex_format(byte);
 
 	GenerateUniqueAuthTag();
-	std::cout << "\nAuth Tag: ";
+	std::cout << "\nAuthenication Tag: ";
 	for (const auto& byte : AUTH_TAG)
 		std::cout << hex_format(byte);
 
