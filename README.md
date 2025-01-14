@@ -2,11 +2,11 @@
 
 ![Vault's LOGO](Resources/Vault-LOGO.png)
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/yourusername/vault)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/NorthernL1ghts/vault)
 [![C++ Version](https://img.shields.io/badge/C%2B%2B-20-blue)](https://isocpp.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](https://opensource.org/licenses/MIT)
-[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue)](https://github.com/yourusername/vault)
-[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](https://github.com/yourusername/vault)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue)](https://github.com/NorthernL1ghts/vault)
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](https://github.com/NorthernL1ghts/vault)
 
 ## Overview
 
