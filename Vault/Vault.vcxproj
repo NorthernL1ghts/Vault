@@ -56,21 +56,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)Binaries\Debug-windows-x86_64\Vault\</OutDir>
-    <IntDir>$(SolutionDir)Intermediate\Debug-windows-x86_64\Vault\</IntDir>
+    <IntDir>$(SolutionDir)Intermediates\Debug-windows-x86_64\Vault\</IntDir>
     <TargetName>Vault</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)Binaries\Release-windows-x86_64\Vault\</OutDir>
-    <IntDir>$(SolutionDir)Intermediate\Release-windows-x86_64\Vault\</IntDir>
+    <IntDir>$(SolutionDir)Intermediates\Release-windows-x86_64\Vault\</IntDir>
     <TargetName>Vault</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dist|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)Binaries\Dist-windows-x86_64\Vault\</OutDir>
-    <IntDir>$(SolutionDir)Intermediate\Dist-windows-x86_64\Vault\</IntDir>
+    <IntDir>$(SolutionDir)Intermediates\Dist-windows-x86_64\Vault\</IntDir>
     <TargetName>Vault</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>

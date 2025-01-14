@@ -24,7 +24,7 @@ project "Vault"
    staticruntime "on"
 
    targetdir ("$(SolutionDir)Binaries/" .. outputdir .. "/%{prj.name}")
-   objdir ("$(SolutionDir)Intermediate/" .. outputdir .. "/%{prj.name}")
+   objdir ("$(SolutionDir)Intermediates/" .. outputdir .. "/%{prj.name}")
 
    files
    {
