@@ -4,9 +4,9 @@ workspace "Vault"
 
    configurations
    {
-      "Debug",
-      "Release",
-      "Dist"
+      "VAULT_DEBUG",
+      "VAULT_RELEASE",
+      "VAULT_DIST"
    }
 
    flags
@@ -34,7 +34,9 @@ project "Vault"
 
    defines
    {
-      "VAULT_PLATFORM_WINDOWS"
+      "VAULT_PLATFORM_WINDOWS",
+      "UNICODE",
+      "_UNICODE"
    }
 
    includedirs
@@ -54,18 +56,18 @@ project "Vault"
       "bcrypt"
    }
 
-   filter "configurations:Debug"
-      defines "VAULT_DEBUG"
+   filter "configurations:VAULT_DEBUG"
+      defines { "VAULT_DEBUG", "UNICODE", "_UNICODE" }
       runtime "Debug"
       symbols "on"
 
-   filter "configurations:Release"
-      defines "VAULT_RELEASE"
+   filter "configurations:VAULT_RELEASE"
+      defines { "VAULT_RELEASE", "UNICODE", "_UNICODE" }
       runtime "Release"
       optimize "on"
 
-   filter "configurations:Dist"
-      defines "VAULT_DIST"
+   filter "configurations:VAULT_DIST"
+      defines { "VAULT_DIST", "UNICODE", "_UNICODE" }
       runtime "Release"
       optimize "on"
 
@@ -76,3 +78,7 @@ project "Vault"
       {
          "VAULT_PLATFORM_WINDOWS"
       }
+
+   -- Set the character set to Unicode (UTF-8) for Windows
+   filter { "system:windows", "language:C++" }
+      characterset "Unicode"
