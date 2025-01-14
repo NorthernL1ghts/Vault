@@ -19,8 +19,11 @@ using ByteArray64 = std::array<unsigned char, 64>;
 using FunctionQueue = std::vector<std::function<void()>>;
 using MutexLock = std::scoped_lock<std::mutex>;
 
+#define VAULT_ASSERT(x, msg) { if (!(x)) { std::cerr << "Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } }
+#define VAULT_CORE_ASSERT(x, msg) { if (!(x)) { std::cerr << "Core Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } }
+
 BCRYPT_ALG_HANDLE h_Algorithm = nullptr;
-std::atomic<bool> g_ApplicationRunning(true);
+std::atomic<bool> g_ApplicationRunning(false);
 static std::thread s_MainThread;
 static std::thread s_KeyThread;
 static std::thread::id s_MainThreadID;
@@ -48,12 +51,8 @@ void SignalHandler(int signal)
 static bool Initialize()
 {
 	NTSTATUS status = BCryptOpenAlgorithmProvider(&h_Algorithm, BCRYPT_AES_ALGORITHM, nullptr, 0);
-	if (status != 0)
-	{
-		std::cerr << "Failed to open algorithm provider, error code: " << status << '\n';
-		return false;
-	}
-	return true;
+	VAULT_CORE_ASSERT(status == 0, "Failed to open algorithm provider");
+	return status == 0;
 }
 
 static void GenerateAES256Keys(ByteArray32& aes256Key1, ByteArray32& aes256Key2)
@@ -166,6 +165,10 @@ static void Run()
 
 int main()
 {
+	VAULT_ASSERT(g_ApplicationRunning == false, "Program is already running");
+
+	g_ApplicationRunning = true;
+
 	signal(SIGINT, SignalHandler);
 	s_MainThread = std::thread(Run);
 	if (s_MainThread.joinable())
