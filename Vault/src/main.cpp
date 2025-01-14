@@ -9,6 +9,8 @@
 #include <functional>
 #include <mutex>
 
+#define ROOT_DIR "C:\\Dev\\Vault"
+
 #pragma comment(lib, "bcrypt.lib")
 
 BCRYPT_ALG_HANDLE h_Algorithm = nullptr;
