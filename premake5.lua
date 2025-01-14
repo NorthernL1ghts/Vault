@@ -39,18 +39,6 @@ project "Vault"
       "_UNICODE"
    }
 
-   includedirs
-   {
-      -- Add bcrypt library include directory if needed
-      -- Example: "vendor/bcrypt/include"
-   }
-
-   libdirs
-   {
-      -- Add bcrypt library directory if needed
-      -- Example: "vendor/bcrypt/lib"
-   }
-
    links
    {
       "bcrypt"
