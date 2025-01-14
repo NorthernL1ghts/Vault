@@ -11,6 +11,7 @@
 #include <csignal>
 #include <string>
 #include <filesystem>
+#include <fstream>
 
 #pragma comment(lib, "bcrypt.lib")
 
@@ -67,6 +68,8 @@ static void GenerateRandomBytes(unsigned char* buffer, std::size_t size);
 static void GenerateUniqueIV();
 static void GenerateUniqueNonce();
 static void GenerateUniqueAuthTag();
+static std::ifstream GetFile(const std::string& filePath);
+static void GetFileContents(const std::string& filePath);
 static void SubmitToMainThread(const std::function<void()>& function);
 static void ExecuteMainThreadQueue();
 static void Shutdown();
@@ -131,6 +134,21 @@ static void GenerateUniqueNonce()
 static void GenerateUniqueAuthTag()
 {
 	GenerateRandomBytes(AUTH_TAG.data(), AUTH_TAG.size());
+}
+
+static std::ifstream GetFile(const std::string& filePath)
+{
+	std::ifstream file(filePath, std::ios::binary);
+	VAULT_ASSERT(file.is_open(), "Failed to open file");
+	return file;
+}
+
+static void GetFileContents(const std::string& filePath)
+{
+	std::ifstream file = GetFile(filePath);
+	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+	std::cout << "\nFile Contents:" << content << '\n';
+	file.close();
 }
 
 static void SubmitToMainThread(const std::function<void()>& function)
@@ -229,6 +247,9 @@ static void Run()
 
 	std::cout << '\n';
 
+	// Example usage of GetFileContents
+	GetFileContents(std::string(ROOT_DIR) + "\\Tests\\example_file.txt");
+
 	s_KeyThread = std::thread(KeyMonitor);
 
 	while (g_ApplicationRunning)
@@ -254,5 +275,9 @@ int main(int argc, char** argv)
 	s_MainThread = std::thread(Run);
 	if (s_MainThread.joinable())
 		s_MainThread.join();
+
+	// Example usage of GetFileContents
+	GetFileContents(std::string(ROOT_DIR) + "\\Tests\\example_file.txt");
+
 	return 0;
 }
