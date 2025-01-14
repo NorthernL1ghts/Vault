@@ -9,17 +9,20 @@
 BCRYPT_ALG_HANDLE h_Algorithm = nullptr;
 bool g_ApplicationRunning = true;
 
-bool Initialize() {
+bool Initialize()
+{
 	// Open an algorithm handle for AES
 	NTSTATUS status = BCryptOpenAlgorithmProvider(&h_Algorithm, BCRYPT_AES_ALGORITHM, nullptr, 0);
-	if (status != 0) {
+	if (status != 0)
+	{
 		std::cerr << "Failed to open algorithm provider, error code: " << status << '\n';
 		return false;
 	}
 	return true;
 }
 
-void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<unsigned char, 32>& aes256Key2) {
+void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<unsigned char, 32>& aes256Key2)
+{
 	NTSTATUS status;
 
 	// Generate first key
@@ -33,15 +36,18 @@ void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<un
 		std::cerr << "Failed to generate second AES-256 key, error code: " << status << '\n';
 }
 
-void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std::array<unsigned char, 32>& aes256Key2, std::array<unsigned char, 64>& aes512Key) {
+void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std::array<unsigned char, 32>& aes256Key2, std::array<unsigned char, 64>& aes512Key)
+{
 	// Copy the first 32 bytes
 	std::copy(aes256Key1.begin(), aes256Key1.end(), aes512Key.begin());
 	// Copy the second 32 bytes
 	std::copy(aes256Key2.begin(), aes256Key2.end(), aes512Key.begin() + 32);
 }
 
-void Run() {
-	if (!Initialize()) {
+void Run()
+{
+	if (!Initialize())
+	{
 		std::cerr << "Failed to initialize BCrypt." << '\n';
 		return;
 	}
@@ -69,12 +75,14 @@ void Run() {
 
 	std::cout << '\n';
 
-	while (g_ApplicationRunning) {
+	while (g_ApplicationRunning)
+	{
 		g_ApplicationRunning = true;
 	}
 }
 
-void Shutdown() {
+void Shutdown()
+{
 	g_ApplicationRunning = false;
 	std::cout << "Shutting down application...\n";
 
@@ -85,7 +93,9 @@ void Shutdown() {
 	exit(0);
 }
 
-int main() {
+// ---- ENTRY POINT -------- 
+int main()
+{
 	Run();
 	Shutdown();
 
