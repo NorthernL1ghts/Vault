@@ -40,6 +40,16 @@ void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std:
 	std::copy(aes256Key2.begin(), aes256Key2.end(), aes512Key.begin() + 32);
 }
 
+void Shutdown()
+{
+	g_ApplicationRunning = false;
+	std::cout << "Shutting down application...\n";
+
+	if (h_Algorithm)
+		BCryptCloseAlgorithmProvider(h_Algorithm, 0);
+}
+
+
 void Run()
 {
 	if (!Initialize())
@@ -76,15 +86,6 @@ void Run()
 	}
 
 	Shutdown();  // Call Shutdown here
-}
-
-void Shutdown()
-{
-	g_ApplicationRunning = false;
-	std::cout << "Shutting down application...\n";
-
-	if (h_Algorithm)
-		BCryptCloseAlgorithmProvider(h_Algorithm, 0);
 }
 
 int main()
