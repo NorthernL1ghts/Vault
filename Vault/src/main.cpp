@@ -7,6 +7,7 @@
 #pragma comment(lib, "bcrypt.lib")
 
 BCRYPT_ALG_HANDLE h_Algorithm = nullptr;
+bool g_ApplicationRunning = true;
 
 bool Initialize() {
 	// Open an algorithm handle for AES
@@ -32,11 +33,13 @@ void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<un
 		std::cerr << "Failed to generate second AES-256 key, error code: " << status << std::endl;
 }
 
-int main() {
+void Run() {
 	if (!Initialize()) {
 		std::cerr << "Failed to initialize BCrypt." << std::endl;
-		return -1;
+		return;
 	}
+
+	std::cout << "Application is running...\n";
 
 	std::array<unsigned char, 32> aes256Key1;
 	std::array<unsigned char, 32> aes256Key2;
@@ -53,9 +56,29 @@ int main() {
 
 	std::cout << std::endl;
 
-	// Clean up
+	while (g_ApplicationRunning) {
+		// Application running logic
+		// For demonstration, we will stop the application after one iteration
+		g_ApplicationRunning = false;
+	}
+}
+
+void Shutdown() {
+	// Perform shutdown tasks
+	g_ApplicationRunning = false;
+	std::cout << "Shutting down application...\n";
+
+	// Clean up BCrypt resources
 	if (h_Algorithm)
 		BCryptCloseAlgorithmProvider(h_Algorithm, 0);
+
+	// Exit the application
+	exit(0);
+}
+
+int main() {
+	Run();
+	Shutdown();
 
 	return 0;
 }
