@@ -9,8 +9,11 @@
 #include <functional>
 #include <mutex>
 #include <csignal>
+#include <string>
+#include <filesystem>
 
 constexpr const char* ROOT_DIR = "C:\\Dev\\Vault";
+std::atomic<bool> g_ApplicationRunning(false);
 
 #pragma comment(lib, "bcrypt.lib")
 
@@ -19,11 +22,29 @@ using ByteArray64 = std::array<unsigned char, 64>;
 using FunctionQueue = std::vector<std::function<void()>>;
 using MutexLock = std::scoped_lock<std::mutex>;
 
-#define VAULT_ASSERT(x, msg) { if (!(x)) { std::cerr << "Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } }
-#define VAULT_CORE_ASSERT(x, msg) { if (!(x)) { std::cerr << "Core Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } }
+constexpr auto VAULT_ASSERT = [](bool x, const char* msg) { if (!x) { std::cerr << "Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } };
+constexpr auto VAULT_CORE_ASSERT = [](bool x, const char* msg) { if (!x) { std::cerr << "Core Assertion Failed: " << msg << '\n'; g_ApplicationRunning = false; } };
+
+struct ApplicationCommandLineArgs
+{
+	int Count = 0;
+	char** Args = nullptr;
+
+	const char* operator[](int index) const
+	{
+		VAULT_CORE_ASSERT(index < Count, "Index out of range");
+		return Args[index];
+	}
+};
+
+struct ApplicationSpecification
+{
+	std::string Name = "Vault";
+	std::string WorkingDirectory;
+	ApplicationCommandLineArgs CommandLineArgs;
+};
 
 BCRYPT_ALG_HANDLE h_Algorithm = nullptr;
-std::atomic<bool> g_ApplicationRunning(false);
 static std::thread s_MainThread;
 static std::thread s_KeyThread;
 static std::thread::id s_MainThreadID;
@@ -38,8 +59,9 @@ static void ExecuteMainThreadQueue();
 static void Shutdown();
 static void KeyMonitor();
 static void Run();
+static void SignalHandler(int signal);
 
-void SignalHandler(int signal)
+static void SignalHandler(int signal)
 {
 	if (signal == SIGINT)
 	{
@@ -163,11 +185,17 @@ static void Run()
 	Shutdown();
 }
 
-int main()
+int main(int argc, char** argv)
 {
 	VAULT_ASSERT(g_ApplicationRunning == false, "Program is already running");
 
 	g_ApplicationRunning = true;
+
+	ApplicationCommandLineArgs cmdArgs{ argc, argv };
+	ApplicationSpecification appSpec{ "Vault", "", cmdArgs };
+
+	if (!appSpec.WorkingDirectory.empty())
+		std::filesystem::current_path(appSpec.WorkingDirectory);
 
 	signal(SIGINT, SignalHandler);
 	s_MainThread = std::thread(Run);
