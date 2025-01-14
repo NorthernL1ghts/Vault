@@ -8,19 +8,39 @@
 #include <vector>
 #include <functional>
 #include <mutex>
+#include <csignal>
 
-#define ROOT_DIR "C:\\Dev\\Vault"
+constexpr const char* ROOT_DIR = "C:\\Dev\\Vault";
 
 #pragma comment(lib, "bcrypt.lib")
 
 BCRYPT_ALG_HANDLE h_Algorithm = nullptr;
 std::atomic<bool> g_ApplicationRunning(true);
 static std::thread s_MainThread;
+static std::thread s_KeyThread;
 static std::thread::id s_MainThreadID;
 std::vector<std::function<void()>> m_MainThreadQueue;
 std::mutex m_MainThreadQueueMutex;
 
-bool Initialize()
+static bool Initialize();
+static void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<unsigned char, 32>& aes256Key2);
+static void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std::array<unsigned char, 32>& aes256Key2, std::array<unsigned char, 64>& aes512Key);
+static void SubmitToMainThread(const std::function<void()>& function);
+static void ExecuteMainThreadQueue();
+static void Shutdown();
+static void KeyMonitor();
+static void Run();
+
+void SignalHandler(int signal)
+{
+	if (signal == SIGINT)
+	{
+		std::cout << "SIGINT received. Initiating shutdown...\n";
+		SubmitToMainThread(Shutdown);
+	}
+}
+
+static bool Initialize()
 {
 	NTSTATUS status = BCryptOpenAlgorithmProvider(&h_Algorithm, BCRYPT_AES_ALGORITHM, nullptr, 0);
 	if (status != 0)
@@ -31,7 +51,7 @@ bool Initialize()
 	return true;
 }
 
-void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<unsigned char, 32>& aes256Key2)
+static void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<unsigned char, 32>& aes256Key2)
 {
 	NTSTATUS status;
 
@@ -44,19 +64,19 @@ void GenerateAES256Keys(std::array<unsigned char, 32>& aes256Key1, std::array<un
 		std::cerr << "Failed to generate second AES-256 key, error code: " << status << '\n';
 }
 
-void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std::array<unsigned char, 32>& aes256Key2, std::array<unsigned char, 64>& aes512Key)
+static void ConcatenateKeys(const std::array<unsigned char, 32>& aes256Key1, const std::array<unsigned char, 32>& aes256Key2, std::array<unsigned char, 64>& aes512Key)
 {
 	std::copy(aes256Key1.begin(), aes256Key1.end(), aes512Key.begin());
 	std::copy(aes256Key2.begin(), aes256Key2.end(), aes512Key.begin() + 32);
 }
 
-void SubmitToMainThread(const std::function<void()>& function)
+static void SubmitToMainThread(const std::function<void()>& function)
 {
 	std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
 	m_MainThreadQueue.emplace_back(function);
 }
 
-void ExecuteMainThreadQueue()
+static void ExecuteMainThreadQueue()
 {
 	std::vector<std::function<void()>> queueCopy;
 	{
@@ -68,7 +88,7 @@ void ExecuteMainThreadQueue()
 		func();
 }
 
-void Shutdown()
+static void Shutdown()
 {
 	g_ApplicationRunning = false;
 	std::cout << "Shutting down application...\n";
@@ -78,9 +98,26 @@ void Shutdown()
 
 	if (s_MainThread.joinable())
 		s_MainThread.join();
+
+	if (s_KeyThread.joinable())
+		s_KeyThread.join();
 }
 
-void Run()
+static void KeyMonitor()
+{
+	while (g_ApplicationRunning)
+	{
+		if ((GetAsyncKeyState('Q') & 0x8000) || (GetAsyncKeyState('q') & 0x8000))
+		{
+			std::cout << "Termination key (q/Q) pressed. Initiating shutdown...\n";
+			SubmitToMainThread(Shutdown);
+			return;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+}
+
+static void Run()
 {
 	s_MainThreadID = std::this_thread::get_id();
 	std::cout << "Main thread ID: " << s_MainThreadID << '\n';
@@ -114,6 +151,8 @@ void Run()
 
 	std::cout << '\n';
 
+	s_KeyThread = std::thread(KeyMonitor);
+
 	while (g_ApplicationRunning)
 		ExecuteMainThreadQueue();
 
@@ -122,6 +161,7 @@ void Run()
 
 int main()
 {
+	signal(SIGINT, SignalHandler);
 	s_MainThread = std::thread(Run);
 	if (s_MainThread.joinable())
 		s_MainThread.join();
